@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Đơn hàng | Order Service (Port 8082)</title>
+    <link rel="stylesheet" href="/styles.css">
+    <script src="/app.js" defer></script>
+</head>
+<body>
+<div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-icon">📦</div>
+            <div>
+                <div class="brand-title">Order<span>Service</span></div>
+                <div class="brand-subtitle">SOA Architecture • Port 8082</div>
+            </div>
+        </div>
+
+        <ul class="nav-menu">
+            <li>
+                <a class="nav-link active" id="nav-orders">
+                    <span>📋</span>
+                    <span>Danh sách đơn hàng</span>
+                </a>
+            </li>
+            <li>
+                <a class="nav-link" id="nav-items">
+                    <span>🛒</span>
+                    <span>Tất cả mặt hàng</span>
+                </a>
+            </li>
+        </ul>
+
+        <div class="sidebar-status">
+            <div class="status-item">
+                <span><span class="status-dot online"></span>Auth Service</span>
+                <strong>:8080</strong>
+            </div>
+            <div class="status-item">
+                <span><span class="status-dot online"></span>Product Service</span>
+                <strong>:8081</strong>
+            </div>
+            <div class="status-item">
+                <span><span class="status-dot online"></span>Order Service</span>
+                <strong>:8082</strong>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Wrapper -->
+    <div class="main-wrapper">
+        <!-- Topbar -->
+        <header class="topbar">
+            <div class="topbar-title" id="page-title">Quản lý Đơn hàng (Orders)</div>
+            <div class="topbar-actions">
+                <div class="user-badge" id="user-badge">
+                    <span>👤</span>
+                    <span id="user-display">Chưa đăng nhập</span>
+                </div>
+                <button class="btn btn-primary btn-sm" id="btn-login-modal">Đăng nhập</button>
+                <button class="btn btn-outline btn-sm" id="btn-logout" style="display: none;">Đăng xuất</button>
+            </div>
+        </header>
+
+        <!-- Content Body -->
+        <main class="content-body">
+            <!-- Global Alert -->
+            <div id="global-alert" class="alert"></div>
+
+            <!-- VIEW: ORDERS -->
+            <div id="view-orders">
+                <!-- Stats Grid -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">Tổng đơn hàng</div>
+                        <div class="stat-value" id="stat-total-orders">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Đang chờ xử lý (Pending)</div>
+                        <div class="stat-value" id="stat-pending-orders" style="color: var(--warning);">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Đã hoàn thành (Completed)</div>
+                        <div class="stat-value" id="stat-completed-orders" style="color: var(--success);">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Tổng doanh thu</div>
+                        <div class="stat-value" id="stat-total-revenue" style="color: var(--primary);">0 ₫</div>
+                    </div>
+                </div>
+
+                <!-- Action Bar -->
+                <div class="action-bar">
+                    <div class="search-box">
+                        <span>🔍</span>
+                        <input type="text" id="order-search" placeholder="Tìm theo tên khách hàng hoặc email...">
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-outline" id="btn-refresh-orders">🔄 Làm mới</button>
+                        <button class="btn btn-primary" id="btn-open-create-order">+ Tạo đơn hàng mới</button>
+                    </div>
+                </div>
+
+                <!-- Orders Table Card -->
+                <div class="table-card">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>Mã ĐH</th>
+                            <th>Khách hàng</th>
+                            <th>Email</th>
+                            <th>Mặt hàng</th>
+                            <th>Tổng tiền</th>
+                            <th>Trạng thái</th>
+                            <th>Ngày tạo</th>
+                            <th style="text-align: right;">Thao tác</th>
+                        </tr>
+                        </thead>
+                        <tbody id="orders-tbody">
+                        <tr>
+                            <td colspan="8" class="empty-state">Đang tải dữ liệu đơn hàng...</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- VIEW: ORDER ITEMS -->
+            <div id="view-items" style="display: none;">
+                <div class="action-bar">
+                    <div class="search-box">
+                        <span>🔍</span>
+                        <input type="text" id="item-search" placeholder="Tìm theo mã đơn, mã SP hoặc tên...">
+                    </div>
+                    <button class="btn btn-outline" id="btn-refresh-items">🔄 Làm mới</button>
+                </div>
+
+                <div class="table-card">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>Mã CT</th>
+                            <th>Mã Đơn hàng</th>
+                            <th>Mã SP</th>
+                            <th>Tên sản phẩm</th>
+                            <th>Số lượng</th>
+                            <th>Đơn giá</th>
+                            <th>Thành tiền</th>
+                            <th style="text-align: right;">Thao tác</th>
+                        </tr>
+                        </thead>
+                        <tbody id="items-tbody">
+                        <tr>
+                            <td colspan="8" class="empty-state">Đang tải chi tiết mặt hàng...</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- MODAL: LOGIN -->
+<div class="modal-overlay" id="modal-login">
+    <div class="modal" style="max-width: 420px;">
+        <div class="modal-header">
+            <h3 class="modal-title">Đăng nhập tài khoản (JWT)</h3>
+            <button class="modal-close" data-close="modal-login">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+                Xác thực thông qua <strong>Auth Service</strong> (Bài thực hành 2) tại <code>http://localhost:8080</code>.
+            </p>
+            <div id="login-alert" class="alert alert-danger"></div>
+            <form id="form-login">
+                <div class="form-group">
+                    <label>Tên đăng nhập</label>
+                    <input type="text" id="login-username" class="form-control" value="admin" required>
+                </div>
+                <div class="form-group">
+                    <label>Mật khẩu</label>
+                    <input type="password" id="login-password" class="form-control" value="123456" required>
+                </div>
+                <div class="form-group">
+                    <label>Hoặc dán JWT Token thủ công</label>
+                    <textarea id="login-raw-token" class="form-control" rows="2" placeholder="eyJhbGciOi..."></textarea>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" data-close="modal-login">Hủy</button>
+            <button class="btn btn-primary" id="btn-submit-login">Xác nhận</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: CREATE ORDER -->
+<div class="modal-overlay" id="modal-create-order">
+    <div class="modal" style="max-width: 720px;">
+        <div class="modal-header">
+            <h3 class="modal-title">Tạo đơn hàng mới (Kiểm tra tồn kho)</h3>
+            <button class="modal-close" data-close="modal-create-order">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div id="create-order-alert" class="alert alert-danger"></div>
+            <form id="form-create-order">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label>Tên khách hàng <span style="color: var(--danger);">*</span></label>
+                        <input type="text" id="create-customer-name" class="form-control" placeholder="Ví dụ: Nguyễn Văn A" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Email khách hàng <span style="color: var(--danger);">*</span></label>
+                        <input type="email" id="create-customer-email" class="form-control" placeholder="vana@example.com" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Trạng thái khởi tạo</label>
+                    <select id="create-order-status" class="form-control">
+                        <option value="pending" selected>Đang xử lý (Pending)</option>
+                        <option value="completed">Đã hoàn thành (Completed)</option>
+                        <option value="cancelled">Đã hủy (Cancelled)</option>
+                    </select>
+                </div>
+
+                <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 20px 0;">
+
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                    <h4 style="font-size: 15px;">Mặt hàng trong đơn (Lấy từ Product Service :8081)</h4>
+                    <span id="product-stock-hint" style="font-size: 12px; color: var(--primary); font-weight: 500;"></span>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 2fr 1fr auto; gap: 10px; align-items: flex-end; margin-bottom: 16px;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>Chọn sản phẩm</label>
+                        <select id="select-product" class="form-control">
+                            <option value="">-- Chọn sản phẩm từ Product Service --</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>Số lượng</label>
+                        <input type="number" id="input-product-quantity" class="form-control" min="1" value="1">
+                    </div>
+                    <button type="button" class="btn btn-secondary" id="btn-add-item-to-table">+ Thêm</button>
+                </div>
+
+                <!-- Items Preview Table -->
+                <div class="table-card" style="margin-bottom: 16px;">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>Sản phẩm</th>
+                            <th>Đơn giá</th>
+                            <th>Số lượng</th>
+                            <th>Thành tiền</th>
+                            <th style="width: 50px;"></th>
+                        </tr>
+                        </thead>
+                        <tbody id="create-items-tbody">
+                        <tr>
+                            <td colspan="5" class="empty-state" style="padding: 16px;">Chưa chọn mặt hàng nào. Có thể tạo đơn rỗng hoặc thêm sản phẩm.</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div style="text-align: right; font-size: 16px; font-weight: 700;">
+                    Tổng tiền dự tính: <span id="create-total-amount" style="color: var(--primary);">0 ₫</span>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" data-close="modal-create-order">Hủy</button>
+            <button class="btn btn-primary" id="btn-submit-create-order">Xác nhận tạo đơn</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: ORDER DETAILS -->
+<div class="modal-overlay" id="modal-order-details">
+    <div class="modal" style="max-width: 720px;">
+        <div class="modal-header">
+            <h3 class="modal-title">Chi tiết đơn hàng #<span id="detail-order-id"></span></h3>
+            <button class="modal-close" data-close="modal-order-details">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div id="detail-order-alert" class="alert"></div>
+
+            <div style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 14px; margin-bottom: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px;">
+                <div><strong>Khách hàng:</strong> <span id="detail-customer-name"></span></div>
+                <div><strong>Email:</strong> <span id="detail-customer-email"></span></div>
+                <div><strong>Trạng thái:</strong> <span id="detail-status-badge"></span></div>
+                <div><strong>Tổng tiền:</strong> <span id="detail-total-amount" style="font-weight: 700; color: var(--primary);"></span></div>
+                <div style="grid-column: span 2;"><strong>Ngày tạo:</strong> <span id="detail-created-at"></span></div>
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                <h4 style="font-size: 15px;">Danh sách mặt hàng (`order_items`)</h4>
+            </div>
+
+            <div class="table-card" style="margin-bottom: 20px;">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Mã SP</th>
+                        <th>Tên sản phẩm</th>
+                        <th>Đơn giá</th>
+                        <th>Số lượng</th>
+                        <th>Thành tiền</th>
+                        <th style="text-align: right;">Thao tác</th>
+                    </tr>
+                    </thead>
+                    <tbody id="detail-items-tbody">
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Add Item Directly To This Order -->
+            <div style="background: var(--bg-card); border: 1px dashed var(--border-color); border-radius: var(--radius-sm); padding: 16px;">
+                <h5 style="font-size: 13px; margin-bottom: 10px;">Thêm mặt hàng mới vào đơn này (`POST /order_items`):</h5>
+                <div style="display: grid; grid-template-columns: 2fr 1fr auto; gap: 10px; align-items: flex-end;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <select id="detail-select-product" class="form-control">
+                            <option value="">-- Chọn sản phẩm --</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <input type="number" id="detail-input-quantity" class="form-control" min="1" value="1">
+                    </div>
+                    <button type="button" class="btn btn-secondary" id="btn-add-item-to-order">+ Thêm vào đơn</button>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" data-close="modal-order-details">Đóng</button>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

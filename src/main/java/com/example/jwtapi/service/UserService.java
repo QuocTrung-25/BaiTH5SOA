@@ -1,28 +1,59 @@
 package com.example.jwtapi.service;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
+import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
-
-import com.example.jwtapi.model.User;
 
 @Service
 public class UserService {
+    private static final String FIND_PASSWORD_SQL =
+            "SELECT `Password` FROM `user` WHERE BINARY `UserName` = BINARY ? LIMIT 1";
 
-    // Demo lab: tài khoản nằm trong bộ nhớ, chưa dùng database.
-    // Mật khẩu "123456" được lưu dạng Base64: MTIzNDU2
-    private final User demoUser = new User("admin","MTIzNDU2","ADMIN");
+    private final JdbcTemplate jdbcTemplate;
 
-    public boolean authenticate(String userName, String encodedPassword) {
-        return demoUser.getUsername().equals(userName)
-                && demoUser.getPassword().equals(encodedPassword);
+    public UserService(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
+    }
+
+    public boolean authenticate(String userName, String password) {
+        if (userName == null || password == null) {
+            return false;
+        }
+
+        try {
+            String storedPassword = jdbcTemplate.queryForObject(
+                    FIND_PASSWORD_SQL, String.class, userName);
+            String decodedPassword = decodeBase64(password);
+            return storedPassword != null
+                    && (storedPassword.equals(password) || storedPassword.equals(decodedPassword));
+        } catch (EmptyResultDataAccessException exception) {
+            return false;
+        }
     }
 
     public boolean exists(String userName) {
-        return demoUser.getUsername().equals(userName);
+        if (userName == null) {
+            return false;
+        }
+        Integer count = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM `user` WHERE BINARY `UserName` = BINARY ?",
+                Integer.class,
+                userName);
+        return count != null && count > 0;
     }
 
     public String getDemoEncodedPassword() {
-        return Base64.getEncoder().encodeToString("123456".getBytes());
+        return Base64.getEncoder().encodeToString("123456".getBytes(StandardCharsets.UTF_8));
+    }
+
+    private String decodeBase64(String value) {
+        try {
+            return new String(Base64.getDecoder().decode(value), StandardCharsets.UTF_8);
+        } catch (IllegalArgumentException exception) {
+            return value;
+        }
     }
 }
