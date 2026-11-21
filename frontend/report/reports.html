@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>SOA - Reporting Service (:8083)</title>
+    <link rel="stylesheet" href="report.css">
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-icon">S</div>
+                <div>
+                    <div class="brand-title">SOA<span>Hub</span></div>
+                    <div class="brand-subtitle">Microservices Lab</div>
+                </div>
+            </div>
+            <ul class="nav-menu">
+                <li><a class="nav-link" href="../index.html"><i class="fas fa-chart-pie"></i> Tổng quan</a></li>
+                <li><a class="nav-link" href="../login/auth.html"><i class="fas fa-shield-alt"></i> Auth Service (8080)</a></li>
+                <li><a class="nav-link" href="../products/products.html"><i class="fas fa-box-open"></i> Product Service (8081)</a></li>
+                <li><a class="nav-link" href="../order/order.html"><i class="fas fa-shopping-cart"></i> Order Service (8082)</a></li>
+                <li><a class="nav-link active" href="reports.html"><i class="fas fa-file-invoice-dollar"></i> Reporting (8083)</a></li>
+            </ul>
+        </aside>
+
+        <div class="main-wrapper">
+            <header class="topbar">
+                <div class="topbar-title">Reporting Service - Báo cáo Doanh thu & Lợi nhuận (:8083)</div>
+                <div class="topbar-actions">
+                    <button class="btn btn-outline btn-sm" onclick="loadReports()"><i class="fas fa-sync-alt"></i> Làm mới báo cáo</button>
+                    <div class="user-badge"><i class="fas fa-user-circle"></i> <span id="user-badge-name">Chưa đăng nhập</span></div>
+                </div>
+            </header>
+
+            <div style="padding: 16px 32px 0 32px;">
+                <div class="alert alert-danger" id="alert-error"></div>
+                <div class="alert alert-success" id="alert-success"></div>
+            </div>
+
+            <main class="content-body">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">Tổng Doanh Thu</div>
+                        <div class="stat-value" id="rep-revenue" style="color: #f59e0b;">0 ₫</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Tổng Chi Phí</div>
+                        <div class="stat-value" id="rep-cost" style="color: #ef4444;">0 ₫</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Tổng Lợi Nhuận</div>
+                        <div class="stat-value" id="rep-profit" style="color: #8b5cf6;">0 ₫</div>
+                    </div>
+                </div>
+
+                <!-- VỊ TRÍ THÊM FORM TẠO BÁO CÁO -->
+                <div class="panel-card" style="margin-bottom: 24px;">
+                    <h3>Tạo Báo cáo từ Đơn hàng (POST /reports/orders)</h3>
+                    <div style="display:flex; gap:12px; margin-top:12px;">
+                        <input type="number" id="report-order-id" placeholder="Nhập Order ID (VD: 3)">
+                        <button class="btn btn-primary" onclick="createManualReport()"><i class="fas fa-plus"></i> Tạo báo cáo</button>
+                    </div>
+                </div>
+
+                <div class="panel-card" style="margin-bottom: 24px;">
+                    <h3>Báo cáo theo Đơn hàng (orders_reports)</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Order ID</th>
+                                <th>Tổng Doanh thu</th>
+                                <th>Tổng Chi phí</th>
+                                <th>Tổng Lợi nhuận</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="order-reports-tbody">
+                            <tr><td colspan="6">Đang tải dữ liệu...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="panel-card">
+                    <h3>Báo cáo theo Sản phẩm (product_reports)</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Order Report ID</th>
+                                <th>Product ID</th>
+                                <th>Tên sản phẩm</th>
+                                <th>Đã bán</th>
+                                <th>Doanh thu</th>
+                                <th>Lợi nhuận</th>
+                            </tr>
+                        </thead>
+                        <tbody id="product-reports-tbody">
+                            <tr><td colspan="7">Đang tải dữ liệu...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </main>
+        </div>
+    </div>
+    <script src="../app.js"></script>
+</body>
+</html>

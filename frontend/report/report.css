@@ -1,0 +1,16 @@
+.profit-positive {
+    color: #10b981;
+    font-weight: 700;
+}
+
+.profit-negative {
+    color: #ef4444;
+    font-weight: 700;
+}
+
+.report-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}

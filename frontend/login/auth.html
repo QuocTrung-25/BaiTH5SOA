@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>SOA - Auth Service (:8080)</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="login.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-icon">S</div>
+                <div>
+                    <div class="brand-title">SOA<span>Hub</span></div>
+                    <div class="brand-subtitle">Microservices Lab</div>
+                </div>
+            </div>
+            <ul class="nav-menu">
+                <li><a class="nav-link" href="../index.html"><i class="fas fa-chart-pie"></i> Tổng quan</a></li>
+                <li><a class="nav-link active" href="auth.html"><i class="fas fa-shield-alt"></i> Auth Service (8080)</a></li>
+                <li><a class="nav-link" href="../products/products.html"><i class="fas fa-box-open"></i> Product Service (8081)</a></li>
+                <li><a class="nav-link" href="../order/order.html"><i class="fas fa-shopping-cart"></i> Order Service (8082)</a></li>
+                <li><a class="nav-link" href="../report/reports.html"><i class="fas fa-file-invoice-dollar"></i> Reporting (8083)</a></li>
+            </ul>
+        </aside>
+
+        <div class="main-wrapper">
+            <header class="topbar">
+                <div class="topbar-title">Auth Service - Xác thực & Phân quyền JWT (:8080)</div>
+                <div class="topbar-actions">
+                    <button class="btn btn-danger btn-sm" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Đăng xuất</button>
+                    <div class="user-badge"><i class="fas fa-user-circle"></i> <span id="user-badge-name">Chưa đăng nhập</span></div>
+                </div>
+            </header>
+
+            <div style="padding: 16px 32px 0 32px;">
+                <div class="alert alert-danger" id="alert-error"></div>
+                <div class="alert alert-success" id="alert-success"></div>
+            </div>
+
+            <main class="content-body">
+                <div class="arch-grid">
+                    <div class="panel-card">
+                        <h3 style="margin-bottom: 16px;"><i class="fas fa-sign-in-alt" style="color: #2563eb;"></i> Đăng nhập lấy Token</h3>
+                        <form id="login-form">
+                            <div class="form-group" style="margin-bottom: 12px;">
+                                <label>Tên đăng nhập (Username)</label>
+                                <input type="text" id="login-username" value="admin" required>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 16px;">
+                                <label>Mật khẩu (Password)</label>
+                                <input type="password" id="login-password" value="123456" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary"><i class="fas fa-key"></i> Đăng nhập</button>
+                        </form>
+                    </div>
+
+                    <div class="panel-card">
+                        <h3 style="margin-bottom: 16px;"><i class="fas fa-user-plus" style="color: #10b981;"></i> Đăng ký tài khoản mới</h3>
+                        <form id="register-form">
+                            <div class="form-group" style="margin-bottom: 12px;">
+                                <label>Username</label>
+                                <input type="text" id="reg-username" placeholder="Nhập username..." required>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 12px;">
+                                <label>Password</label>
+                                <input type="password" id="reg-password" placeholder="Nhập mật khẩu..." required>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 16px;">
+                                <label>Vai trò (Role)</label>
+                                <select id="reg-role">
+                                    <option value="USER">USER</option>
+                                    <option value="ADMIN">ADMIN</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-success"><i class="fas fa-check"></i> Đăng ký</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="panel-card" style="margin-top: 20px;">
+                    <h3 style="margin-bottom: 10px;">JWT Token đang lưu trong LocalStorage</h3>
+                    <textarea id="current-token" class="auth-token-box" rows="4" readonly></textarea>
+                </div>
+            </main>
+        </div>
+    </div>
+    <script src="../app.js"></script>
+    <script src="login.js"></script>
+</body>
+</html>

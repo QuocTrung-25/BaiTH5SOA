@@ -1,37 +1,54 @@
-document.addEventListener('DOMContentLoaded', async () => {
+async function checkServicePing(url, dotId) {
+    const dot = document.getElementById(dotId);
+    if (!dot) return;
     try {
-        const [resProd, resOrder, resRep] = await Promise.all([
-            authFetch(`${API_CONFIG.PRODUCT}/products`),
-            authFetch(`${API_CONFIG.ORDER}/orders`),
-            authFetch(`${API_CONFIG.REPORT}/reports/orders`)
-        ]);
-
-        if (resProd.ok) {
-            const products = await resProd.json();
-            const el = document.getElementById('stat-products-count');
-            if (el) el.textContent = products.length;
-        }
-
-        if (resOrder.ok) {
-            const orders = await resOrder.json();
-            const el = document.getElementById('stat-orders-count');
-            if (el) el.textContent = orders.length;
-        }
-
-        if (resRep.ok) {
-            const reports = await resRep.json();
-            let totalRev = 0;
-            let totalProfit = 0;
-            reports.forEach(r => {
-                totalRev += parseFloat(r.totalRevenue || 0);
-                totalProfit += parseFloat(r.totalProfit || 0);
-            });
-            const revEl = document.getElementById('stat-revenue');
-            const profitEl = document.getElementById('stat-profit');
-            if (revEl) revEl.textContent = `$${totalRev.toFixed(2)}`;
-            if (profitEl) profitEl.textContent = `$${totalProfit.toFixed(2)}`;
-        }
-    } catch (e) {
-        console.warn('Overview fetch error:', e);
+        const res = await fetch(url, { headers: authHeaders() });
+        dot.className = res.status < 500 ? 'status-dot online' : 'status-dot offline';
+    } catch {
+        dot.className = 'status-dot offline';
     }
+}
+
+async function checkHealth() {
+    await Promise.all([
+        checkServicePing(`${API_CONFIG.AUTH}/health`, 'dot-auth'),
+        checkServicePing(API_CONFIG.PRODUCT, 'dot-product'),
+        checkServicePing(API_CONFIG.ORDER, 'dot-order'),
+        checkServicePing(`${API_CONFIG.REPORT}/orders`, 'dot-report')
+    ]);
+    showAlert('Đã kiểm tra trạng thái các cổng dịch vụ SOA!');
+}
+
+async function loadOverviewStats() {
+    try {
+        const prodRes = await fetch(API_CONFIG.PRODUCT, { headers: authHeaders() });
+        if (prodRes.ok) {
+            const products = await prodRes.json();
+            document.getElementById('stat-products-count').textContent = products.length;
+        }
+    } catch (e) { console.warn('Product service offline'); }
+
+    try {
+        const ordRes = await fetch(API_CONFIG.ORDER, { headers: authHeaders() });
+        if (ordRes.ok) {
+            const orders = await ordRes.json();
+            document.getElementById('stat-orders-count').textContent = orders.length;
+        }
+    } catch (e) { console.warn('Order service offline'); }
+
+    try {
+        const repRes = await fetch(`${API_CONFIG.REPORT}/orders`, { headers: authHeaders() });
+        if (repRes.ok) {
+            const reports = await repRes.json();
+            const revenue = reports.reduce((sum, r) => sum + Number(r.totalRevenue || r.total_revenue || 0), 0);
+            const profit = reports.reduce((sum, r) => sum + Number(r.totalProfit || r.total_profit || 0), 0);
+            document.getElementById('stat-revenue').textContent = formatVND(revenue);
+            document.getElementById('stat-profit').textContent = formatVND(profit);
+        }
+    } catch (e) { console.warn('Reporting service offline'); }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    checkHealth();
+    loadOverviewStats();
 });

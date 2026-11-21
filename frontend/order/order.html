@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>SOA - Order Service (:8082)</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="order.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-icon">S</div>
+                <div>
+                    <div class="brand-title">SOA<span>Hub</span></div>
+                    <div class="brand-subtitle">Microservices Lab</div>
+                </div>
+            </div>
+            <ul class="nav-menu">
+                <li><a class="nav-link" href="../index.html"><i class="fas fa-chart-pie"></i> Tổng quan</a></li>
+                <li><a class="nav-link" href="../login/auth.html"><i class="fas fa-shield-alt"></i> Auth Service (8080)</a></li>
+                <li><a class="nav-link" href="../products/products.html"><i class="fas fa-box-open"></i> Product Service (8081)</a></li>
+                <li><a class="nav-link active" href="order.html"><i class="fas fa-shopping-cart"></i> Order Service (8082)</a></li>
+                <li><a class="nav-link" href="../report/reports.html"><i class="fas fa-file-invoice-dollar"></i> Reporting (8083)</a></li>
+            </ul>
+        </aside>
+
+        <div class="main-wrapper">
+            <header class="topbar">
+                <div class="topbar-title">Order Service - Quản lý Đơn hàng (:8082)</div>
+                <div class="topbar-actions">
+                    <button class="btn btn-outline btn-sm" onclick="loadOrders()"><i class="fas fa-sync-alt"></i> Tải lại</button>
+                    <div class="user-badge"><i class="fas fa-user-circle"></i> <span id="user-badge-name">Chưa đăng nhập</span></div>
+                </div>
+            </header>
+
+            <div style="padding: 16px 32px 0 32px;">
+                <div class="alert alert-danger" id="alert-error"></div>
+                <div class="alert alert-success" id="alert-success"></div>
+            </div>
+
+<main class="content-body">
+                <div class="panel-card" style="margin-bottom: 24px;">
+                    <h3 style="margin-bottom: 16px;">Tạo Đơn hàng mới</h3>
+                    <form id="order-form">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Tên khách hàng</label>
+                                <input type="text" id="order-customer" placeholder="VD: Nguyen Van An" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Email khách hàng</label>
+                                <input type="email" id="order-email" placeholder="VD: an@example.com" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Chọn Sản phẩm</label>
+                                <select id="order-product-select" required></select>
+                            </div>
+                            <div class="form-group">
+                                <label>Số lượng mua</label>
+                                <input type="number" id="order-quantity" value="1" min="1" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-warning"><i class="fas fa-cart-plus"></i> Tạo đơn hàng</button>
+                    </form>
+                </div>
+
+                <div class="panel-card">
+                    <h3>Danh sách Đơn hàng</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Mã ĐH</th>
+                                <th>Khách hàng</th>
+                                <th>Email</th>
+                                <th>Tổng tiền</th>
+                                <th>Trạng thái</th>
+                                <th>Ngày tạo</th>
+                                <th>Cập nhật trạng thái</th>
+                            </tr>
+                        </thead>
+                        <tbody id="orders-tbody">
+                            <tr><td colspan="7">Đang tải dữ liệu...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </main>
+        </div>
+    </div>
+    <script src="../app.js"></script>
+    <script src="order.js"></script>
+</body>
+</html>
