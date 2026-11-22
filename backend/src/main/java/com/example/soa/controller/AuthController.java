@@ -1,16 +1,22 @@
 package com.example.soa.controller;
 
+import java.util.Map;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.example.soa.dto.LoginRequest;
 import com.example.soa.dto.LoginResponse;
 import com.example.soa.service.JwtService;
 import com.example.soa.service.UserService;
+
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
 
 @RestController
 @CrossOrigin(origins = "*")
@@ -57,5 +63,16 @@ public class AuthController {
                 "message", "Hello World",
                 "userName", userName
         ));
+    }
+    @PostMapping({"/api/v1/register", "/register"})
+    public ResponseEntity<?> register(@Valid @RequestBody LoginRequest request) {
+        try {
+            userService.register(request.getUserName(), request.getPassword());
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(Map.of("message", "Đăng ký tài khoản thành công!", "userName", request.getUserName()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", e.getMessage()));
+        }
     }
 }

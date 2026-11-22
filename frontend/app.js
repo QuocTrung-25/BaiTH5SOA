@@ -6,34 +6,61 @@ const API = {
     REPORT_PRODUCT: 'http://localhost:8083/reports/products'
 };
 
+// Alias tương thích cho các script trang con
+const API_CONFIG = {
+    AUTH: 'http://localhost:8080',
+    PRODUCT: 'http://localhost:8081/products',
+    ORDER: 'http://localhost:8082/orders',
+    REPORT: 'http://localhost:8083/reports'
+};
+
 const vnd = (n) => Number(n || 0).toLocaleString('vi-VN') + ' ₫';
-const getToken = () => localStorage.getItem('soa_token') || '';
-const getUser = () => localStorage.getItem('soa_username') || '';
+const formatVND = vnd;
+
+const getToken = () => localStorage.getItem('soa_token') || localStorage.getItem('jwt_token') || '';
+const getUser = () => localStorage.getItem('soa_username') || localStorage.getItem('jwt_user') || '';
+
+function saveAuthSession(token, userName) {
+    localStorage.setItem('soa_token', token);
+    localStorage.setItem('jwt_token', token);
+    localStorage.setItem('token', token);
+    localStorage.setItem('soa_username', userName);
+    localStorage.setItem('jwt_user', userName);
+}
+
+function clearAuthSession() {
+    ['soa_token', 'jwt_token', 'token', 'accessToken', 'soa_username', 'jwt_user', 'userName', 'username']
+        .forEach(k => localStorage.removeItem(k));
+}
 
 function headers() {
     const h = { 'Content-Type': 'application/json' };
-    if (getToken()) h['Authorization'] = `Bearer ${getToken()}`;
+    const t = getToken();
+    if (t) h['Authorization'] = `Bearer ${t}`;
     return h;
 }
+const authHeaders = headers;
 
 function notify(msg, isError = false) {
     const err = document.getElementById('alert-error');
     const ok = document.getElementById('alert-success');
     if (err) err.style.display = 'none';
     if (ok) ok.style.display = 'none';
-    const el = isError ? err : ok;
+    const el = isError === true || isError === 'error' ? err : ok;
     if (el) {
         el.textContent = msg;
         el.style.display = 'block';
-        setTimeout(() => el.style.display = 'none', 4000);
+        setTimeout(() => { el.style.display = 'none'; }, 4000);
     }
 }
+const showAlert = notify;
 
 async function apiFetch(url, options = {}) {
     const res = await fetch(url, { ...options, headers: { ...headers(), ...(options.headers || {}) } });
     if (res.status === 204) return null;
     const text = await res.text();
-    const data = text ? JSON.parse(text) : null;
+    let data = null;
+    try { data = text ? JSON.parse(text) : null; } catch { data = { message: text }; }
     if (!res.ok) throw new Error((data && data.message) || `Lỗi HTTP ${res.status}`);
     return data;
 }
@@ -76,7 +103,7 @@ async function initOverview() {
     } catch {}
 }
 
-window.checkHealth = () => initOverview().then(() => notify('Đã kiểm tra trạng thái các cổng!'));
+window.checkHealth = () => initOverview().then(() => notify('Đã kiểm tra trạng thái các cổng dịch vụ SOA!'));
 
 // --- 2. AUTH (login/auth.html) ---
 function initAuth() {
@@ -88,14 +115,13 @@ function initAuth() {
         form.onsubmit = async (e) => {
             e.preventDefault();
             try {
-                const userName = document.getElementById('login-username').value;
-                const password = document.getElementById('login-password').value;
-                const data = await apiFetch(`${API.AUTH}/login`, {
+                const userName = document.getElementById('login-username').value.trim();
+                const password = document.getElementById('login-password').value.trim();
+                const data = await apiFetch(`${API.AUTH}/api/v1/login`, {
                     method: 'POST',
                     body: JSON.stringify({ userName, password })
                 });
-                localStorage.setItem('soa_token', data.token);
-                localStorage.setItem('soa_username', data.userName || userName);
+                saveAuthSession(data.token, data.userName || userName);
                 if (box) box.value = data.token;
                 updateBadge();
                 notify(data.message || 'Đăng nhập thành công!');
@@ -104,11 +130,29 @@ function initAuth() {
             }
         };
     }
+
+    const regForm = document.getElementById('register-form');
+    if (regForm) {
+        regForm.onsubmit = async (e) => {
+            e.preventDefault();
+            try {
+                const userName = document.getElementById('reg-username').value.trim();
+                const password = document.getElementById('reg-password').value.trim();
+                const data = await apiFetch(`${API.AUTH}/api/v1/register`, {
+                    method: 'POST',
+                    body: JSON.stringify({ userName, password })
+                });
+                notify(data.message || 'Đăng ký tài khoản thành công!');
+                regForm.reset();
+            } catch (err) {
+                notify(err.message, true);
+            }
+        };
+    }
 }
 
 window.logout = () => {
-    localStorage.removeItem('soa_token');
-    localStorage.removeItem('soa_username');
+    clearAuthSession();
     const box = document.getElementById('current-token');
     if (box) box.value = 'Đã đăng xuất.';
     updateBadge();
@@ -132,33 +176,42 @@ async function initProducts() {
     window.loadProducts = async () => {
         try {
             const list = await apiFetch(API.PRODUCT);
-            tbody.innerHTML = list.length ? list.map(p => `
-                <tr>
-                    <td>${p.id}</td>
-                    <td><strong>${p.name}</strong></td>
-                    <td>${p.description || '-'}</td>
-                    <td>${vnd(p.price)}</td>
-                    <td>${p.quantity ?? 0}</td>
-                    <td>
-                        <button class="btn btn-outline btn-sm" onclick='fillProduct(${JSON.stringify(p)})'>Sửa</button>
-                        <button class="btn btn-danger btn-sm" onclick="removeProduct(${p.id})">Xóa</button>
-                    </td>
-                </tr>
-            `).join('') : '<tr><td colspan="6">Chưa có sản phẩm.</td></tr>';
+            tbody.innerHTML = list.length ? list.map(p => {
+                const stock = p.quantity ?? 0;
+                const stockClass = stock < 5 ? 'stock-low' : 'stock-ok';
+                return `
+                    <tr>
+                        <td>${p.id}</td>
+                        <td><strong>${p.name}</strong></td>
+                        <td>${p.description || '-'}</td>
+                        <td>${vnd(p.price)}</td>
+                        <td class="${stockClass}">${stock}</td>
+                        <td>
+                            <button class="btn btn-outline btn-sm" onclick='fillProduct(${JSON.stringify(p)})'>Sửa</button>
+                            <button class="btn btn-danger btn-sm" onclick="removeProduct(${p.id})">Xóa</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('') : '<tr><td colspan="6">Chưa có sản phẩm.</td></tr>';
         } catch (err) {
             tbody.innerHTML = `<tr><td colspan="6" style="color:red">${err.message}</td></tr>`;
         }
     };
 
     window.fillProduct = (p) => {
+        const title = document.getElementById('product-form-title');
+        if (title) title.textContent = `Cập nhật Sản phẩm #${p.id}`;
         document.getElementById('product-id').value = p.id;
         document.getElementById('product-name').value = p.name;
         document.getElementById('product-price').value = p.price;
         document.getElementById('product-stock').value = p.quantity ?? 0;
         document.getElementById('product-desc').value = p.description || '';
     };
+    window.editProduct = window.fillProduct;
 
     window.resetProductForm = () => {
+        const title = document.getElementById('product-form-title');
+        if (title) title.textContent = 'Thêm Sản phẩm mới';
         document.getElementById('product-form').reset();
         document.getElementById('product-id').value = '';
     };
@@ -171,15 +224,16 @@ async function initProducts() {
             loadProducts();
         } catch (err) { notify(err.message, true); }
     };
+    window.deleteProduct = window.removeProduct;
 
     document.getElementById('product-form').onsubmit = async (e) => {
         e.preventDefault();
         const id = document.getElementById('product-id').value;
         const body = JSON.stringify({
-            name: document.getElementById('product-name').value,
+            name: document.getElementById('product-name').value.trim(),
             price: parseFloat(document.getElementById('product-price').value),
             quantity: parseInt(document.getElementById('product-stock').value, 10),
-            description: document.getElementById('product-desc').value
+            description: document.getElementById('product-desc').value.trim()
         });
         try {
             await apiFetch(id ? `${API.PRODUCT}/${id}` : API.PRODUCT, { method: id ? 'PUT' : 'POST', body });
@@ -213,12 +267,13 @@ async function initOrders() {
                 return `
                     <tr>
                         <td>#${o.id}</td>
-                        <td><strong>${o.customerName || o.customer_name}</strong></td>
+                        <td><strong>${o.customerName || o.customer_name || '-'}</strong></td>
                         <td>${o.customerEmail || o.customer_email || '-'}</td>
-                        <td><strong>${vnd(o.totalAmount || o.total_amount)}</strong></td>
+                        <td><strong>${vnd(o.totalAmount || o.total_amount || 0)}</strong></td>
                         <td><span class="badge badge-${st}">${st.toUpperCase()}</span></td>
+                        <td>${(o.createdAt || o.created_at) ? new Date(o.createdAt || o.created_at).toLocaleString('vi-VN') : '-'}</td>
                         <td>
-                            <select onchange="changeOrderStatus(${o.id}, this.value)">
+                            <select class="status-select" onchange="changeOrderStatus(${o.id}, this.value)">
                                 <option value="pending" ${st === 'pending' ? 'selected' : ''}>PENDING</option>
                                 <option value="completed" ${st === 'completed' ? 'selected' : ''}>COMPLETED</option>
                                 <option value="cancelled" ${st === 'cancelled' ? 'selected' : ''}>CANCELLED</option>
@@ -227,9 +282,9 @@ async function initOrders() {
                         </td>
                     </tr>
                 `;
-            }).join('') : '<tr><td colspan="6">Chưa có đơn hàng.</td></tr>';
+            }).join('') : '<tr><td colspan="7">Chưa có đơn hàng.</td></tr>';
         } catch (err) {
-            tbody.innerHTML = `<tr><td colspan="6" style="color:red">${err.message}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="7" style="color:red">${err.message}</td></tr>`;
         }
     };
 
@@ -240,6 +295,7 @@ async function initOrders() {
             loadOrders();
         } catch (err) { notify(err.message, true); }
     };
+    window.updateOrderStatus = window.changeOrderStatus;
 
     window.removeOrder = async (id) => {
         if (!confirm('Xóa đơn hàng này?')) return;
@@ -253,8 +309,8 @@ async function initOrders() {
     document.getElementById('order-form').onsubmit = async (e) => {
         e.preventDefault();
         const body = JSON.stringify({
-            customerName: document.getElementById('order-customer').value,
-            customerEmail: document.getElementById('order-email').value,
+            customerName: document.getElementById('order-customer').value.trim(),
+            customerEmail: document.getElementById('order-email').value.trim(),
             items: [{
                 productId: parseInt(select.value, 10),
                 quantity: parseInt(document.getElementById('order-quantity').value, 10)
@@ -329,8 +385,11 @@ async function initReports() {
         const orderId = document.getElementById('report-order-id').value;
         if (!orderId) return notify('Nhập Order ID cần tạo báo cáo!', true);
         try {
-            await apiFetch(`${API.REPORT_ORDER}?orderId=${orderId}`, { method: 'POST', body: JSON.stringify({ orderId: Number(orderId) }) });
-            notify(`Đã tạo báo cáo cho đơn #${orderId}!`);
+            await apiFetch(`${API.REPORT_ORDER}?orderId=${orderId}`, {
+                method: 'POST',
+                body: JSON.stringify({ orderId: Number(orderId) })
+            });
+            notify(`Đã tạo/cập nhật báo cáo cho đơn #${orderId}!`);
             loadReports();
         } catch (err) { notify(err.message, true); }
     };

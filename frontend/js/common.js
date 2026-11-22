@@ -4,7 +4,11 @@ const API_CONFIG = {
     ORDER: 'http://localhost:8082',
     REPORT: 'http://localhost:8083'
 };
-
+localStorage.setItem('token', data.token);
+localStorage.setItem('jwt_token', data.token);
+localStorage.setItem('accessToken', data.token);
+localStorage.setItem('userName', data.userName || username);
+localStorage.setItem('username', data.userName || username);
 function getToken() {
     return localStorage.getItem('jwt_token') || '';
 }
